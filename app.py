@@ -100,7 +100,7 @@ def webhook_handler():
 
     # if event is MessageEvent and message is TextMessage, then echo text
     for event in events:
-        print("****")
+        print("****ss")
         print(event)
         print("****")
         if not isinstance(event, MessageEvent):
