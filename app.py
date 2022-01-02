@@ -10,7 +10,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from transitions.core import Condition
 
 from fsm import TocMachine
-from utils import imgur_URL, send_button_message, send_image_message, send_text_message, send_sticker_message
+from utils import  send_button_message, send_image_message, send_text_message, send_sticker_message #imgur_URL,
 
 import matplotlib
 import matplotlib.pyplot as plt
