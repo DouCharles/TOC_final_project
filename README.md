@@ -4,7 +4,7 @@
 ### 記錄小幫手
 產生一個方便記帳、寫備忘錄的line bot<br>
 剛開始進入畫面<br>
-
+![image](https://github.com/DouCharles/TOC_final_project/tree/master/img/testing.PNG)
 請先掃QR code來加入好友!
 
 ## 流程

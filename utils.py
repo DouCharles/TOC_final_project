@@ -6,21 +6,21 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage, TemplateS
 from linebot.models.messages import StickerMessage
 from linebot.models.template import ButtonsTemplate
 
-#import pyimgur
+import pyimgur
 
 channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", None)
 
-# def imgur_URL(path):
-#     # normal_samples = np.random.normal(size = 100000)
-#     # uniform_samples = np.random.uniform(size = 100000)
-#     # plt.hist(normal_samples)
-#     # plt.savefig('send.png')
-#     CLIENT_ID = "fd09955e4ff9447"
-#     PATH = path#"./img/account.png"
-#    # CLIENT_SECRETE = "3ade55fbdb044063c963eb1fb03a161589a8a52d"
-#     im = pyimgur.Imgur(CLIENT_ID)
-#     uploaded_image = im.upload_image(PATH, title="Uploaded with PyImgur")
-#     return uploaded_image.link
+def imgur_URL(path):
+    # normal_samples = np.random.normal(size = 100000)
+    # uniform_samples = np.random.uniform(size = 100000)
+    # plt.hist(normal_samples)
+    # plt.savefig('send.png')
+    CLIENT_ID = "fd09955e4ff9447"
+    PATH = path#"./img/account.png"
+   # CLIENT_SECRETE = "3ade55fbdb044063c963eb1fb03a161589a8a52d"
+    im = pyimgur.Imgur(CLIENT_ID)
+    uploaded_image = im.upload_image(PATH, title="Uploaded with PyImgur")
+    return uploaded_image.link
 
 def send_text_message(reply_token, text):
     line_bot_api = LineBotApi(channel_access_token)

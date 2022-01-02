@@ -10,7 +10,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from transitions.core import Condition
 
 from fsm import TocMachine
-from utils import  send_button_message, send_image_message, send_text_message, send_sticker_message #imgur_URL,
+from utils import send_button_message, send_image_message, send_text_message, send_sticker_message,imgur_URL
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -54,7 +54,9 @@ load_dotenv()
 machine = TocMachine(
     states=["user", 
     "memo", "memoAdd", "memoDelete", "memoList",
-    "bookkeeping", "bookkeepingRecord"],
+    "bookkeeping", "bookkeepingRecord"
+    # ,"bookkeeping", "bookkeepingCost", "bookkeepingEarn", "bookkeeping"
+    ],
     transitions=[
         {"trigger": "advance","source": ["user", "bookkeeping"],"dest": "memo","conditions": "is_going_to_memo",},
         {"trigger": "advance","source": ["user", "memo"],"dest": "bookkeeping","conditions": "is_going_to_bookkeeping",},
@@ -69,6 +71,7 @@ machine = TocMachine(
         {"trigger": "advance","source": "bookkeepingRecord","dest": "bookkeeping","conditions": "is_going_back_to_bookkeeping",},
         
         {"trigger": "advance","source":  ["user","memo","bookkeeping","bookkeepingRecord"],"dest": "user","conditions": "is_going_to_reset",},
+        #-----------------------------------------------#
     ],
     initial="user",
     auto_transitions=False,
@@ -147,14 +150,14 @@ def webhook_handler():
         if event.message.text == "hi":
             send_sticker_message(reply_token,11538,51626494)
             return "OK"
-        # if event.message.text == "FSM":
-        #     machine.get_graph().draw("./img/fsm.png", prog="dot", format="png")
-        #     send_image_message(reply_token,imgur_URL("./img/fsm.png"))
-        #     return "OK"
+        if event.message.text == "FSM":
+            machine.get_graph().draw("./img/fsm.png", prog="dot", format="png")
+            send_image_message(reply_token,imgur_URL("./img/fsm.png"))
+            return "OK"
         if machine.mode == "bookkeepingRecord":
             
             message = event.message.text.split('/')
-            if message[0]=="返回":
+            if message[0]=="返回" or message[0] == "reset":
                 response = machine.advance(event)
             elif len(message) != 3:
                 send_text_message(reply_token,"錯誤的指令")
@@ -187,8 +190,8 @@ def webhook_handler():
             for i in range(len(machine.bookkeepingEarn)):
                 earn += machine.bookkeepingEarn[i][0]
             pie([cost,earn],["花費","進帳"],['#ff0000', '#d200d2'],(0,0.1))
-            #send_image_message(reply_token,imgur_URL("./img/account.png"))
-            send_image_message(reply_token,"https://toctesting.herokuapp.com/static/img/accorunt.png")
+            send_image_message(reply_token,imgur_URL("./img/account.png"))
+            # send_image_message(reply_token,"https://toctesting.herokuapp.com/static/img/accorunt.png")
             #send_text_message(reply_token,"開始分析")
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "help":
