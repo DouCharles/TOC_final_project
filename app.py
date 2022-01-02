@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from flask import Flask, jsonify, request, abort, send_file
@@ -6,34 +7,67 @@ from dotenv import load_dotenv
 from linebot import LineBotApi, WebhookParser
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from transitions.core import Condition
 
 from fsm import TocMachine
-from utils import send_text_message
+from utils import imgur_URL, send_button_message, send_image_message, send_text_message
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+
+def pie(data,category,color,seperated):
+    myFont = FontProperties(fname = "./font/kaiu.ttf",size  = 14)
+    category = category#["測試1","測試2"]
+    expend = data #[50,70]
+    color = color #['#ff0000', '#d200d2']
+    plt.figure(figsize=(12,8))
+    separeted = seperated#(0,0.4)
+    pictures,category_text,percent_text = plt.pie(
+            expend,                           # 數值
+            colors = color,                   # 指定圓餅圖的顏色
+            labels = category,                # 分類的標記
+            autopct = "%0.2f%%",              # 四捨五入至小數點後面位數
+            explode = separeted,              # 設定分隔的區塊位置
+            pctdistance = 0.65,               # 數值與圓餅圖的圓心距離
+            radius = 0.7,                     # 圓餅圖的半徑，預設是1
+            center = (-10,0),                 # 圓餅圖的圓心座標
+            shadow=False)                     # 是否使用陰影
+
+    for t in category_text:
+        t.set_fontproperties(myFont)
+    for t in percent_text:
+        t.set_fontproperties(myFont)
+    plt.title("財務分析表", fontproperties=myFont, x=0.5, y=1.03)
+
+    # 設定legnd的位置
+    plt.legend(loc = "center right", prop=myFont)
+    #plt.show()
+    plt.savefig("./img/account.png")
+
+
 
 load_dotenv()
 
 
 machine = TocMachine(
-    states=["user", "memo", "bookkeeping"],
+    states=["user", 
+    "memo", "memoAdd", "memoDelete", "memoList",
+    "bookkeeping", "bookkeepingRecord"],
     transitions=[
-        {
-            "trigger": "advance",
-            "source": "user",
-            "dest": "memo",
-            "conditions": "is_going_to_memo",
-        },
-        {
-            "trigger": "advance",
-            "source": "user",
-            "dest": "bookkeeping",
-            "conditions": "is_going_to_bookkeeping",
-        },
-        {
-            "trigger": "advance", 
-            "source":  ["memo","bookkeeping"],
-            "dest": "user",
-            "conditions": "is_goint_to_user",
-        },
+        {"trigger": "advance","source": ["user", "bookkeeping"],"dest": "memo","conditions": "is_going_to_memo",},
+        {"trigger": "advance","source": ["user", "memo"],"dest": "bookkeeping","conditions": "is_going_to_bookkeeping",},
+        {"trigger": "advance","source":  ["memo","bookkeeping"],"dest": "user","conditions": "is_going_to_user",},
+        
+        {"trigger": "advance","source": "memo", "dest":"memoAdd","conditions":"is_going_to_memoAdd",},
+        {"trigger": "advance","source": "memo", "dest":"memoDelete","conditions":"is_going_to_memoDelete",},
+        {"trigger": "advance","source": "memo", "dest":"memoList","conditions":"is_going_to_memoList",},
+        {"trigger": "go_back_memo","source": ["memoAdd","memoDelete","memoList"], "dest":"memo",},
+
+        {"trigger": "advance","source": "bookkeeping", "dest":"bookkeepingRecord","conditions":"is_going_to_bookkeepingRecord",},
+        {"trigger": "advance","source": "bookkeepingRecord","dest": "bookkeeping","conditions": "is_going_back_to_bookkeeping",},
+
+        {"trigger": "advance","source":  ["user","memo","bookkeeping","bookkeepingRecord"],"dest": "user","conditions": "is_going_to_reset",},
     ],
     initial="user",
     auto_transitions=False,
@@ -72,7 +106,6 @@ def callback():
 
     # if event is MessageEvent and message is TextMessage, then echo text
     for event in events:
-        
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessage):
@@ -100,9 +133,6 @@ def webhook_handler():
 
     # if event is MessageEvent and message is TextMessage, then echo text
     for event in events:
-        print("****ss")
-        print(event)
-        print("****")
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessage):
@@ -111,17 +141,108 @@ def webhook_handler():
             continue
         print(f"\nFSM STATE: {machine.state}")
         print(f"REQUEST BODY: \n{body}")
-        response = machine.advance(event)
+        
+        reply_token = event.reply_token
+        if machine.mode == "bookkeepingRecord":
+            
+            message = event.message.text.split('/')
+            if message[0]=="返回":
+                response = machine.advance(event)
+            elif len(message) != 3:
+                send_text_message(reply_token,"錯誤的指令")
+            elif message[0] == "花費":
+                machine.bookkeepingCost.append([int(message[1]),message[2]])
+                send_text_message(reply_token,"記錄成功")
+            elif message[0] == "進帳":
+                machine.bookkeepingEarn.append([int(message[1]),message[2]])
+                send_text_message(reply_token,"記錄成功")
+            print("COST = ",machine.bookkeepingCost)
+            print("EARN = ",machine.bookkeepingEarn)
+            return "OK"
+        elif machine.mode=="bookkeeping" and event.message.text == "列表":
+            s = "你的花費內容:\n項目->金額\n"
+            for i in range(len(machine.bookkeepingCost)):
+                s = s + "{}->{}\n".format(machine.bookkeepingCost[i][1],machine.bookkeepingCost[i][0])
+            s += "\n你的進帳內容:\n項目->金額\n"
+            for i in range(len(machine.bookkeepingEarn)):
+                s = s + "{}->{}\n".format(machine.bookkeepingEarn[i][1],machine.bookkeepingEarn[i][0])
+            if len(machine.bookkeepingCost) == 0 and len(machine.bookkeepingEarn) == 0:
+                send_text_message(reply_token,"帳本目前為空的")
+            else:
+                send_text_message(reply_token,s)
+            return "OK"
+        elif machine.mode=="bookkeeping" and event.message.text == "分析":
+            cost = 0
+            for i in range(len(machine.bookkeepingCost)):
+                cost += machine.bookkeepingCost[i][0]
+            earn = 0
+            for i in range(len(machine.bookkeepingEarn)):
+                earn += machine.bookkeepingEarn[i][0]
+            pie([cost,earn],["花費","進帳"],['#ff0000', '#d200d2'],(0,0.1))
+            send_image_message(reply_token,imgur_URL())
+            #send_text_message(reply_token,"開始分析")
+            return "OK"
+        elif machine.mode=="bookkeeping" and event.message.text == "help":
+            send_text_message(reply_token,
+"""進入 記帳->記錄模式
+指令：
+花費/金額/項目
+進帳/金額/項目
+
+ex
+花費/500/書本
+進帳/10000/刮刮樂
+
+若要結束記錄模式，可以輸入"返回"
+""")
+            return "OK"
+        else:
+            response = machine.advance(event)
         if response == False:
-            send_text_message(event.reply_token, "Not Entering any State")
+            #reply_token = event.reply_token
+            #machine.go_back_memo()+
+            if event.message.text == "help":
+                if machine.mode == "memo":
+                    send_text_message(reply_token, 
+        """歡迎進入 備忘錄模式
+指令介紹: 
+新增/時間/內容 : 為您新增項目
+刪除/id : 為您刪除項目  (請先用列表確定要刪除的事件id)
+列表: 列表您的備忘錄
+
+ex:
+新增/9:00/開會
+
+若要離開此模式，請輸入"選單"
+""")
+                elif machine.mode == "user":
+                    send_button_message(reply_token,"記錄小幫手","歡迎使用記錄小幫手，請選擇您想要的模式",["記帳","備忘錄"])
+                elif machine.mode == "bookkeeping":
+                    send_button_message(reply_token,"記帳模式","歡迎進入記帳模式，請選擇您想要使用的功能",["記錄","列表","分析"])
+                elif machine.mode == "bookkeepingRecord":
+                    send_text_message(reply_token,
+"""進入 記帳->記錄模式
+指令：
+花費/金額/項目
+進帳/金額/項目
+
+ex
+花費/500/書本
+進帳/10000/刮刮樂
+
+若要結束記錄模式，可以輸入"返回"
+""")
+            else:
+                send_text_message(event.reply_token, "查無此指令，若需要幫助請輸入 help")
 
     return "OK"
 
 
 @app.route("/show-fsm", methods=["GET"])
 def show_fsm():
-    machine.get_graph().draw("fsm22.png", prog="dot", format="png")
-    return send_file("fsm22.png", mimetype="image/png")
+    machine.get_graph().draw("fsm.png", prog="dot", format="png")
+    #return send_file("fsm22.png", mimetype="image/png")
+    return "ok"
 
 
 if __name__ == "__main__":
