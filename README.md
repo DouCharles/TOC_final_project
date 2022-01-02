@@ -55,15 +55,15 @@
 1. 對linebot 輸入"FSM" 也可以得到 FSM的圖<br>
 ![image](https://github.com/DouCharles/TOC_final_project/blob/master/img/fsm_linebot.jpg)
 2. 連接mySQL，資料皆從mySQL中抓取<br>
-3. 輸入"hi"，linebot 會回應圖片
+3. 輸入"hi"，linebot 會回應圖片<br>
 ![image](https://github.com/DouCharles/TOC_final_project/blob/master/img/hi.jpg)
 
 
 ## 環境
-python 3.7.7
-mysql 5.7.28
-matplotlib 3.4.2
-pyMySQL 1.0.2
-pyimgur 0.6.0
-pipenv
+python 3.7.7 <br>
+mysql 5.7.28 <br>
+matplotlib 3.4.2<br>
+pyMySQL 1.0.2<br>
+pyimgur 0.6.0<br>
+pipenv<br>
 
