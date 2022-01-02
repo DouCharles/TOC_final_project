@@ -16,6 +16,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 
+import sql
+
 def pie(data,category,color,seperated):
     myFont = FontProperties(fname = "./font/kaiu.ttf",size  = 14)
     category = category#["測試1","測試2"]
@@ -55,7 +57,7 @@ machine = TocMachine(
     states=["user", 
     "memo", "memoAdd", "memoDelete", "memoList",
     "bookkeeping", "bookkeepingRecord"
-    # ,"bookkeeping", "bookkeepingCost", "bookkeepingEarn", "bookkeeping"
+    # ,"bookkeeping", "bookkeepingCost", "bookkeepingEarn", "bookkeepingCategory", "bookeepingMoney", "bookeepingContent"
     ],
     transitions=[
         {"trigger": "advance","source": ["user", "bookkeeping"],"dest": "memo","conditions": "is_going_to_memo",},
@@ -72,6 +74,7 @@ machine = TocMachine(
         
         {"trigger": "advance","source":  ["user","memo","bookkeeping","bookkeepingRecord"],"dest": "user","conditions": "is_going_to_reset",},
         #-----------------------------------------------#
+
     ],
     initial="user",
     auto_transitions=False,
@@ -159,36 +162,90 @@ def webhook_handler():
             message = event.message.text.split('/')
             if message[0]=="返回" or message[0] == "reset":
                 response = machine.advance(event)
-            elif len(message) != 3:
+            # elif len(message) != 3:
+            #     send_text_message(reply_token,"錯誤的指令")
+            elif message[0] == "help":
+                send_text_message(reply_token,
+"""進入 記帳->記錄模式
+指令：
+花費/金額/項目
+進帳/金額/項目
+刪除/id (需先列表查詢id)
+列表
+
+ex
+花費/500/書本
+進帳/10000/刮刮樂
+
+若要結束記錄模式，可以輸入"返回"
+""")
+            elif message[0] == "花費" and len(message) == 3:
+                # machine.bookkeepingCost.append([int(message[1]),message[2]])
+                sql.sql_insert_account(message[2],message[1],message[0])
+                send_text_message(reply_token,"記錄成功")
+            elif message[0] == "進帳"and len(message) == 3:
+                sql.sql_insert_account(message[2],message[1],message[0])
+                # machine.bookkeepingEarn.append([int(message[1]),message[2]])
+                send_text_message(reply_token,"記錄成功")
+            elif message[0] == "刪除"and len(message) == 2:
+                sql.sql_delete_account(message[1])
+                send_text_message(reply_token,"刪除成功")
+            elif message[0] == "列表":
+                s = "你的花費內容:\nid:項目->金額\n"
+                cost_data = sql.sql_search_account("花費")
+                earn_data = sql.sql_search_account("進帳")
+                for i in range(len(cost_data)):
+                    s = s + "{}:{}->{}\n".format(cost_data[i][0],cost_data[i][2],cost_data[i][1])
+                s += "\n你的進帳內容:\nid:項目->金額\n"
+                for i in range(len(earn_data)):
+                    s = s + "{}:{}->{}\n".format(earn_data[i][0],earn_data[i][2],earn_data[i][1])
+                if len(cost_data) == 0 and len(earn_data) == 0:
+                    send_text_message(reply_token,"帳本目前為空的")
+                else:
+                    send_text_message(reply_token,s)
+            else:
                 send_text_message(reply_token,"錯誤的指令")
-            elif message[0] == "花費":
-                machine.bookkeepingCost.append([int(message[1]),message[2]])
-                send_text_message(reply_token,"記錄成功")
-            elif message[0] == "進帳":
-                machine.bookkeepingEarn.append([int(message[1]),message[2]])
-                send_text_message(reply_token,"記錄成功")
-            print("COST = ",machine.bookkeepingCost)
-            print("EARN = ",machine.bookkeepingEarn)
+            # print("COST = ",machine.bookkeepingCost)
+            # print("EARN = ",machine.bookkeepingEarn)
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "列表":
-            s = "你的花費內容:\n項目->金額\n"
-            for i in range(len(machine.bookkeepingCost)):
-                s = s + "{}->{}\n".format(machine.bookkeepingCost[i][1],machine.bookkeepingCost[i][0])
-            s += "\n你的進帳內容:\n項目->金額\n"
-            for i in range(len(machine.bookkeepingEarn)):
-                s = s + "{}->{}\n".format(machine.bookkeepingEarn[i][1],machine.bookkeepingEarn[i][0])
-            if len(machine.bookkeepingCost) == 0 and len(machine.bookkeepingEarn) == 0:
+            s = "你的花費內容:\nid:項目->金額\n"
+            cost_data = sql.sql_search_account("花費")
+            earn_data = sql.sql_search_account("進帳")
+            # for i in range(len(machine.bookkeepingCost)):
+            #     s = s + "{}->{}\n".format(machine.bookkeepingCost[i][1],machine.bookkeepingCost[i][0])
+            # s += "\n你的進帳內容:\n項目->金額\n"
+            # for i in range(len(machine.bookkeepingEarn)):
+            #     s = s + "{}->{}\n".format(machine.bookkeepingEarn[i][1],machine.bookkeepingEarn[i][0])
+            for i in range(len(cost_data)):
+                s = s + "{}:{}->{}\n".format(cost_data[i][0],cost_data[i][2],cost_data[i][1])
+            s += "\n你的進帳內容:\nid:項目->金額\n"
+            for i in range(len(earn_data)):
+                s = s + "{}:{}->{}\n".format(earn_data[i][0],earn_data[i][2],earn_data[i][1])
+            # if len(machine.bookkeepingCost) == 0 and len(machine.bookkeepingEarn) == 0:
+            #     send_text_message(reply_token,"帳本目前為空的")
+            # else:
+            #     send_text_message(reply_token,s)
+            if len(cost_data) == 0 and len(earn_data) == 0:
                 send_text_message(reply_token,"帳本目前為空的")
             else:
                 send_text_message(reply_token,s)
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "分析":
+            # cost = 0
+            # for i in range(len(machine.bookkeepingCost)):
+            #     cost += machine.bookkeepingCost[i][0]
+            # earn = 0
+            # for i in range(len(machine.bookkeepingEarn)):
+            #     earn += machine.bookkeepingEarn[i][0]
             cost = 0
-            for i in range(len(machine.bookkeepingCost)):
-                cost += machine.bookkeepingCost[i][0]
             earn = 0
-            for i in range(len(machine.bookkeepingEarn)):
-                earn += machine.bookkeepingEarn[i][0]
+            cost_data = sql.sql_search_account("花費")
+            earn_data = sql.sql_search_account("進帳")
+            for i in range(len(cost_data)):
+                cost += int(cost_data[i][1])
+            for i in range(len(earn_data)):
+                earn += int(earn_data[i][1])
             pie([cost,earn],["花費","進帳"],['#ff0000', '#d200d2'],(0,0.1))
             send_image_message(reply_token,imgur_URL("./img/account.png"))
             # send_image_message(reply_token,"https://toctesting.herokuapp.com/static/img/accorunt.png")
