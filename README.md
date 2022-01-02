@@ -5,7 +5,7 @@
 產生一個方便記帳、寫備忘錄的line bot<br>
 
 請先掃QR code來加入好友!<br>
-![image](https://github.com/DouCharles/TOC_final_project/blob/master/img/QR.PNG =500x)
+![image](https://github.com/DouCharles/TOC_final_project/blob/master/img/QR.PNG)
 
 ## 流程
 輸入"help"來得到功能介紹<br>
