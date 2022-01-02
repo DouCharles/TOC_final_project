@@ -43,8 +43,8 @@ def pie(data,category,color,seperated):
     # 設定legnd的位置
     plt.legend(loc = "center right", prop=myFont)
     #plt.show()
-    #plt.savefig("./img/account.png")
-    plt.savefig("static/img/account.png")
+    plt.savefig("./img/account.png")
+    #plt.savefig("static/img/account.png")
 
 
 
@@ -195,18 +195,19 @@ def webhook_handler():
             #send_text_message(reply_token,"開始分析")
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "help":
-            send_text_message(reply_token,
-"""進入 記帳->記錄模式
-指令：
-花費/金額/項目
-進帳/金額/項目
+            send_button_message(reply_token,"記帳模式","歡迎進入記帳模式，請選擇您想要使用的功能",["記錄","列表","分析"])
+#             send_text_message(reply_token,
+# """進入 記帳->記錄模式
+# 指令：
+# 花費/金額/項目
+# 進帳/金額/項目
 
-ex
-花費/500/書本
-進帳/10000/刮刮樂
+# ex
+# 花費/500/書本
+# 進帳/10000/刮刮樂
 
-若要結束記錄模式，可以輸入"返回"
-""")
+# 若要結束記錄模式，可以輸入"返回"
+# """)
             return "OK"
         else:
             response = machine.advance(event)
