@@ -43,7 +43,8 @@ def pie(data,category,color,seperated):
     # 設定legnd的位置
     plt.legend(loc = "center right", prop=myFont)
     #plt.show()
-    plt.savefig("./img/account.png")
+    #plt.savefig("./img/account.png")
+    plt.savefig("static/img/account.png")
 
 
 
@@ -145,12 +146,11 @@ def webhook_handler():
         reply_token = event.reply_token
         if event.message.text == "hi":
             send_sticker_message(reply_token,11538,51626494)
-            #send_text_message(reply_token,"歡迎")
             return "OK"
-        if event.message.text == "FSM":
-            machine.get_graph().draw("./img/fsm.png", prog="dot", format="png")
-            send_image_message(reply_token,imgur_URL("./img/fsm.png"))
-            return "OK"
+        # if event.message.text == "FSM":
+        #     machine.get_graph().draw("./img/fsm.png", prog="dot", format="png")
+        #     send_image_message(reply_token,imgur_URL("./img/fsm.png"))
+        #     return "OK"
         if machine.mode == "bookkeepingRecord":
             
             message = event.message.text.split('/')
@@ -187,7 +187,8 @@ def webhook_handler():
             for i in range(len(machine.bookkeepingEarn)):
                 earn += machine.bookkeepingEarn[i][0]
             pie([cost,earn],["花費","進帳"],['#ff0000', '#d200d2'],(0,0.1))
-            send_image_message(reply_token,imgur_URL("./img/account.png"))
+            #send_image_message(reply_token,imgur_URL("./img/account.png"))
+            send_image_message(reply_token,"https://toctesting.herokuapp.com/static/img/accorunt.png")
             #send_text_message(reply_token,"開始分析")
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "help":
