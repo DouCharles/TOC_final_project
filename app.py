@@ -10,7 +10,7 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 from transitions.core import Condition
 
 from fsm import TocMachine
-from utils import imgur_URL, send_button_message, send_image_message, send_text_message
+from utils import imgur_URL, send_button_message, send_image_message, send_text_message, send_sticker_message
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -143,6 +143,14 @@ def webhook_handler():
         print(f"REQUEST BODY: \n{body}")
         
         reply_token = event.reply_token
+        if event.message.text == "hi":
+            send_sticker_message(reply_token,11538,51626494)
+            #send_text_message(reply_token,"歡迎")
+            return "OK"
+        if event.message.text == "FSM":
+            machine.get_graph().draw("./img/fsm.png", prog="dot", format="png")
+            send_image_message(reply_token,imgur_URL("./img/fsm.png"))
+            return "OK"
         if machine.mode == "bookkeepingRecord":
             
             message = event.message.text.split('/')
@@ -179,7 +187,7 @@ def webhook_handler():
             for i in range(len(machine.bookkeepingEarn)):
                 earn += machine.bookkeepingEarn[i][0]
             pie([cost,earn],["花費","進帳"],['#ff0000', '#d200d2'],(0,0.1))
-            send_image_message(reply_token,imgur_URL())
+            send_image_message(reply_token,imgur_URL("./img/account.png"))
             #send_text_message(reply_token,"開始分析")
             return "OK"
         elif machine.mode=="bookkeeping" and event.message.text == "help":
