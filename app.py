@@ -66,7 +66,7 @@ machine = TocMachine(
 
         {"trigger": "advance","source": "bookkeeping", "dest":"bookkeepingRecord","conditions":"is_going_to_bookkeepingRecord",},
         {"trigger": "advance","source": "bookkeepingRecord","dest": "bookkeeping","conditions": "is_going_back_to_bookkeeping",},
-
+        
         {"trigger": "advance","source":  ["user","memo","bookkeeping","bookkeepingRecord"],"dest": "user","conditions": "is_going_to_reset",},
     ],
     initial="user",
